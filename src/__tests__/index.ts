@@ -81,8 +81,8 @@ const benchmark = async () => {
         library  : ${urls.length} lib(s) 
         ${urls.map(v => `\n\t - ${v.name}`).join('')}
         
-        duration   : ${duration} lib /seconds
-        wait       : ${wait} lib /seconds
+        duration   : ${duration} seconds/ lib
+        wait       : ${wait} seconds/ lib
         limit      : ${limit} limit
         repeat     : ${repeat} repeat   
 
@@ -156,7 +156,8 @@ const benchmark = async () => {
         The winner is "${theWinner.library}" 
 
         limit     : ${limit} rows 
-        duration  : ${duration} seconds 
+        duration  : ${duration} seconds
+        repeat    : ${repeat} repeat   
         request   : ${theWinner['avgRequest']} requests
         execute   : ${theWinner['avgExecute']} request/ms
        
