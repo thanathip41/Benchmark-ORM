@@ -49,10 +49,10 @@ npm test -- --d=5 --w=2 --r=3 --l=1000
 ## Images Benchmark
 
 Server: mysql via TCP/IP
-Server type: MySQL
-Server version: 8.0.33 - MySQL Community Server - GPL
-Protocol version: 10
-Server charset: UTF-8 Unicode (utf8mb4)
+- Server type: MySQL
+- Server version: 8.0.33 - MySQL Community Server - GPL
+- Protocol version: 10
+- Server charset: UTF-8 Unicode (utf8mb4)
 
 benchmark in 10 seconds with limit 10 rows
 ![Example Image](images/limit_10.png)
