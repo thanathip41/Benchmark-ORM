@@ -11,7 +11,7 @@ import { db as typeorm } from './typeorm/db';
 import { db as sequelize } from './sequelize/db';
 
 const PORT = 3000;
-const RETURN_VOID = false;
+const RETURN_VOID = true;
 
 const normalizeLimit = (limit: unknown) => Number(limit ?? 1000);
 
