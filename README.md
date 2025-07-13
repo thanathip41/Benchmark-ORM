@@ -9,7 +9,7 @@ library : 6 lib(s)
 - tspace-mysql
 - drizzle
 
-use the database from db/benchmark.sql
+use the database from db/benchmark.zip
 - table users data for test 40,000 rows 
 - table posts data for test 40,000 rows
 

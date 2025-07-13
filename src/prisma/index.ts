@@ -5,19 +5,19 @@ const prisma = new PrismaClient()
 export const prismaBenchmark = async ( limit : number ) => {
 
   const users =  await prisma.user.findMany({
-      select : {
-        id : true,
-        name : true,
-        email : true,
-        posts: {
-          select: {
-            id : true,
-            userId : true,
-            title: true,
-          }
+    select : {
+      id : true,
+      name : true,
+      email : true,
+      posts: {
+        select: {
+          id : true,
+          userId : true,
+          title: true,
         }
-      },
-      take: limit
+      }
+    },
+    take: limit
   })
 
   return users

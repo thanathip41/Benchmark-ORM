@@ -2,7 +2,9 @@ import { DB, Repository } from 'tspace-mysql'
 import { User } from './models/User';
 import { Post } from './models/Post';
 
-export const tspaceMySqlBenchmark = async (limit : number = 30_000) => {
+export const tspaceMySqlBenchmark = async (limit : number) => {
+
+    // can write like Resoitory too!;
 
     // const users =  await Repository(User).findMany({
     //     select : {
@@ -23,7 +25,7 @@ export const tspaceMySqlBenchmark = async (limit : number = 30_000) => {
     .relations('posts')
     .relationQuery('posts', q => q.select('id','userId','title'))
     .limit(limit)
-    .get();
+    .findMany();
 
     return users;
 }
