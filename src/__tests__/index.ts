@@ -1,169 +1,172 @@
-import autocannon , { Result } from 'autocannon'
+import autocannon, { Result } from 'autocannon'
+import yargs from 'yargs'
 
-import yargs from 'yargs';
-
-const { argv } : Record<string,any> = yargs(process.argv.slice(2))
+const { argv }: Record<string, any> = yargs(process.argv.slice(2))
 let limit = argv.l || argv.limit
 let duration = argv.d || argv.duration
 let repeat = argv.r || argv.repeat
-let wait = argv.w || argv.wait
 
-limit    = limit == null ? 100 : Number(limit)
+limit    = limit == null ? 10_000 : Number(limit)
 duration = duration == null ? 10 : Number(duration)
 repeat   = repeat == null ? 1 : Number(repeat)
-wait     = wait == null ? 0 : Number(wait)
 
 const query = `limit=${limit}`
-
-const url = (path : string) => `http://localhost:3000/${path}?${query}`
+const url = (path: string) => `http://localhost:3000/${path}?${query}`
 
 const urls = [
-    { name: 'mysql2',       url: url('mysql2')},
-    { name: 'sequelize',    url: url('sequelize')},
-    { name: 'typeorm',      url: url('typeorm')},
-    { name: 'prisma',       url: url('prisma')},
-    { name: 'tspace-mysql', url: url('tspace-mysql')},
-    { name: 'drizzle',      url: url('drizzle-orm')},
-  ];
+    { name: 'mysql2',       url: url('mysql2') },
+    { name: 'sequelize',    url: url('sequelize') },
+    { name: 'prisma',       url: url('prisma') },
+    { name: 'tspace-mysql', url: url('tspace-mysql') },
+    { name: 'typeorm',      url: url('typeorm') },
+    { name: 'drizzle-orm',  url: url('drizzle-orm') },
+]
 
-const sleep = (ms : number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const runBenchmark = async () : Promise<{
-    name      : string
-    url       : string 
-    send      : number 
-    execution : number
-    duration  : number
-    limit     : number
+const runBenchmark = async (): Promise<{
+  name: string
+  url: string
+  send: number
+  execution: number
+  duration: number
+  limit: number
+  success: number
+  error: number
 }[]> => {
+  return await Promise.all(
+    urls.map(({ name, url }) =>
+      new Promise<{
+        name: string
+        url: string
+        send: number
+        execution: number
+        duration: number
+        limit: number
+        success: number
+        error: number
+      }>((resolve, reject) => {
+        let successCount = 0
+        let errorCount = 0
 
-    const results = [];
-  
-    for (const { name, url } of urls) {
+        autocannon({
+          url,
+          connections: 1,
+          duration,
+          setupClient: (client) => {
+            client.on('response', (statusCode) => {
+              if (statusCode >= 200 && statusCode < 300) {
+                successCount++
+              } else {
+                errorCount++
+              }
+            })
+          }
+        }, (err, result) => {
+          if (err) return reject(err)
 
-        const result : Result  = await new Promise((resolve, reject) => {
-            autocannon({
-                url,
-                connections: 1,
-                duration,
-            }, (err, result) => {
-
-                if (err) return reject(err);
-
-                return resolve(result);
-
-            });
-        })
-
-        results.push({ 
-            name, 
-            url, 
-            send : result.requests.total, 
+          resolve({
+            name,
+            url,
+            send: result.requests.total,
             execution: result.latency.average,
-            duration : duration,
+            duration,
             limit,
-        });
-
-        if (name !== urls[urls.length - 1].name) {
-            await sleep(1000 * wait)
-        }
-    }
-
-    return results
+            success: successCount,
+            error: errorCount,
+          })
+        })
+      })
+    )
+  )
 }
+
 
 const benchmark = async () => {
     console.log(`
     Benchmark ORM(s) analysis for performance
     
-        library  : ${urls.length} lib(s) 
+        library    : ${urls.length} lib(s)
         ${urls.map(v => `\n\t - ${v.name}`).join('')}
         
-        duration   : ${duration} seconds/ lib
-        wait       : ${wait} seconds/ lib
-        limit      : ${limit} limit
-        repeat     : ${repeat} repeat   
+        duration   : ${duration} seconds/lib
+        limit      : ${limit} rows
+        repeat     : ${repeat} repeat(s)
 
-        finished   : +-${((duration + wait) * repeat * urls.length) / 2} seconds
+        estimated  : ~${(duration * repeat)} seconds total
     `)
 
-    const promises = [];
-    
-    for(let i = 1; i <= repeat; i++) {
-        promises.push(() => runBenchmark())
-    }
+    const startTime = Date.now()
 
-    const startTime = +new Date()
-    const results  = await Promise.all(promises.map(v => v()))
-    
-    const grouping = results.flat().reduce((acc, curr) => {
+    const resultsMatrix = await Promise.all(
+        Array.from({ length: repeat }, () => runBenchmark())
+    )
 
+    const combined = resultsMatrix.flat()
+
+    const grouped = combined.reduce((acc, curr) => {
         if (!acc[curr.name]) {
             acc[curr.name] = {
                 name: curr.name,
-                totalAvg : [],
-                totalSend : [],
+                url: curr.url,
+                totalAvg: [],
+                totalSend: [],
                 avg: 0,
-                send: 0
+                send: 0,
+                success: 0,
+                error: 0,
             }
         }
-
-       
-        acc[curr.name].avg += curr['execution']
-        acc[curr.name].send += curr['send']
-        acc[curr.name].totalAvg.push(curr['execution'])
-        acc[curr.name].totalSend.push(curr['send'])
-
+        acc[curr.name].avg += curr.execution
+        acc[curr.name].send += curr.send
+        acc[curr.name].totalAvg.push(curr.execution)
+        acc[curr.name].totalSend.push(curr.send)
+        acc[curr.name].success += curr.success
+        acc[curr.name].error += curr.error
         return acc
-    }, {} as Record<string , any>)
+    }, {} as Record<string, any>)
 
-    const result = Object.values(grouping).map((data) => {
-        const v = data as unknown as  { 
-            name      : string 
-            avg       : number
-            send      : number 
-            totalAvg  : number[]
-            totalSend : number[] 
-        }
+    const result = Object.values(grouped).map((v: any) => ({
+        library: v.name,
+        url: v.url,
+        totalRequest: v.totalSend,
+        totalExecute: v.totalAvg,
+        avgRequest: Number((v.send / repeat).toFixed(2)),
+        avgExecute: Number((v.avg / repeat).toFixed(2)),
+        totalSuccess: v.success,
+        totalError: v.error,
+    }))
 
-        return {
-            'library' : v.name,
-            'totalRequest' : v.totalSend.map(v => Number(v)),
-            'totalExecute' : v.totalAvg.map(v => Number(v)),
-            'avgRequest': Number((v.send / repeat).toFixed(2)),
-            'avgExecute': Number((v.avg / repeat).toFixed(2)),
-        }
-    });
+    const theWinner = result.reduce((best, entry) => {
+      if (entry.totalSuccess > best.totalSuccess) {
+          return entry
+      }
 
-    const theWinner = result.reduce((min, entry) => {
-        if (
-            entry['avgExecute'] > 0 && 
-            (entry['avgExecute'] < min['avgExecute'] || 
-            min['avgExecute'] === 0)
-        ) {
-            return entry
-        }
-        return min
+      if (
+          entry.totalSuccess === best.totalSuccess &&
+          entry.avgExecute < best.avgExecute
+      ) {
+          return entry
+      }
+
+      return best
     }, result[0])
 
-    const endTime = +new Date()
+    const endTime = Date.now()
 
-    console.table(result);
+    console.table(result)
 
     console.log(`
-        The winner is "${theWinner.library}" 
+    🏆 The winner is "${theWinner.library}" 
 
         limit     : ${limit} rows 
         duration  : ${duration} seconds
-        repeat    : ${repeat} repeat   
-        request   : ${theWinner['avgRequest']} requests
-        execute   : ${theWinner['avgExecute']} request/ms
+        repeat    : ${repeat} 
+        request   : ${theWinner.avgRequest} requests
+        execute   : ${theWinner.avgExecute} ms/request
+        success   : ${theWinner.totalSuccess} responses
+        error     : ${theWinner.totalError} errors
        
         benchmark : ${(endTime - startTime) / 1000} seconds
     `)
-
 }
 
 benchmark()

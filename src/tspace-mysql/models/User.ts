@@ -24,7 +24,6 @@ class User extends Model<TS,TR> {
         this.useCamelCase()
         this.useUUID()
         this.useTimestamp()
-        this.useSoftDelete()
         this.hasMany({ model : Post , name : 'posts'  })
         this.useSchema(schema)
     }

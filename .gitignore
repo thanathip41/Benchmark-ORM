@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 node_modules/
-build/
+dist/
 tmp/
 temp/
+package-lock.json
