@@ -7,6 +7,9 @@ export const typeormBenchmark = async ( limit : number  ) => {
     const userRepository = db.getRepository(User);
           
     const users = await userRepository.find({
+      relations: { 
+        posts: true 
+      },
       select : {
         id: true,
         name: true,
@@ -16,9 +19,6 @@ export const typeormBenchmark = async ( limit : number  ) => {
             title: true,
             userId: true,
         }
-      },
-      relations: { 
-        posts: true 
       },
       take : limit
     });

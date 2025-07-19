@@ -16,8 +16,8 @@ const url = (path: string) => `http://localhost:3000/${path}?${query}`
 const urls = [
     { name: 'mysql2',       url: url('mysql2') },
     { name: 'sequelize',    url: url('sequelize') },
-    { name: 'prisma',       url: url('prisma') },
     { name: 'tspace-mysql', url: url('tspace-mysql') },
+    { name: 'prisma',       url: url('prisma') },
     { name: 'typeorm',      url: url('typeorm') },
     { name: 'drizzle-orm',  url: url('drizzle-orm') },
 ]

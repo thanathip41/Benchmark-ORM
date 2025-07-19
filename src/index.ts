@@ -11,7 +11,7 @@ import { db as typeorm } from './typeorm/db';
 import { db as sequelize } from './sequelize/db';
 
 const PORT = 3000;
-const RETURN_VOID = true;
+const RETURN_VOID = false;
 
 const normalizeLimit = (limit: unknown) => Number(limit ?? 1000);
 
@@ -40,7 +40,10 @@ const server = http.createServer(async (req, res) => {
       const limit = normalizeLimit(parsedUrl.query.limit);
       const users = await handler(limit);
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(RETURN_VOID ? { success: true } : { users }));
+      return res.end(JSON.stringify(RETURN_VOID 
+        ? { success: true , count: users.length } 
+        : { success: true , users })
+      );
     } catch (err: any) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ message: err.message || 'Internal Server Error' }));

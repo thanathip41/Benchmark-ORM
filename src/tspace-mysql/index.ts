@@ -4,28 +4,31 @@ import { Post } from './models/Post';
 
 export const tspaceMySqlBenchmark = async (limit : number) => {
 
-    // can write like Resoitory too!;
-
-    // const users =  await Repository(User).findMany({
-    //     select : {
-    //         id : true,
-    //         name : true,
-    //         email : true,
-    //         posts: {
-    //             id : true,
-    //             userId : true,
-    //             title: true,
-    //         }
-    //     },
-    //     limit
-    // });
+    const userRepository = Repository(User);
     
-    const users = await new User()
-    .select('id','name','email')
-    .relations('posts')
-    .relationQuery('posts', q => q.select('id','userId','title'))
-    .limit(limit)
-    .findMany();
+    const users =  await userRepository.findMany({
+        relations: { 
+            posts: true 
+        },
+        select : {
+            id : true,
+            name : true,
+            email : true,
+            posts: {
+                id : true,
+                userId : true,
+                title: true,
+            }
+        },
+        limit
+    });
+    
+    // const users = await new User()
+    // .select('id','name','email')
+    // .relations('posts')
+    // .relationQuery('posts', q => q.select('id','userId','title'))
+    // .limit(limit)
+    // .findMany();
 
     return users;
 }
